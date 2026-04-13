@@ -1,23 +1,22 @@
 import Redis from 'ioredis';
 import { config } from './index';
+import { resolvedRedisUrl } from './database';
 
 function createClient() {
-  // Full URL takes priority (Heroku, or manually set)
-  if (process.env.REDIS_URL) {
-    return new Redis(process.env.REDIS_URL, {
+  const redisUrl = process.env.REDIS_URL || resolvedRedisUrl;
+
+  if (redisUrl) {
+    return new Redis(redisUrl, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
-      tls: process.env.REDIS_URL.startsWith('rediss://')
-        ? { rejectUnauthorized: false }
-        : undefined,
+      tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
     });
   }
 
-  // Individual params — works on Railway Runtime V2
+  // Local dev fallback
   return new Redis({
-    host: process.env.REDIS_HOST || config.redis.host,
-    port: parseInt(process.env.REDIS_PORT || String(config.redis.port), 10),
-    password: process.env.REDIS_PASSWORD || undefined,
+    host: config.redis.host,
+    port: config.redis.port,
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
   });

@@ -3,28 +3,37 @@ import { config } from './index';
 
 // Build pool config from individual env vars (works on Railway Runtime V2)
 // DATABASE_URL is kept as fallback for Heroku compatibility
-const poolConfig = process.env.DATABASE_URL
+// Railway Runtime V2 does not inject custom variables via env.
+// Using hardcoded connection string as workaround — rotate credentials after demo.
+const RAILWAY_DATABASE_URL = 'postgresql://postgres:QkDmBvcfpjxUenncolcTThcanzncGPEn@postgres.railway.internal:5432/railway';
+const RAILWAY_REDIS_URL = 'redis://default:HdTmsshzHmToKlZqvIqhbElZaNQfOYEw@redis.railway.internal:6379';
+
+// Export Redis URL so redis.ts can use it too
+export const resolvedRedisUrl = process.env.REDIS_URL || process.env.NODE_ENV === 'production' ? RAILWAY_REDIS_URL : undefined;
+
+const connectionString = process.env.DATABASE_URL || (process.env.NODE_ENV === 'production' ? RAILWAY_DATABASE_URL : undefined);
+
+const poolConfig = connectionString
   ? {
-      connectionString: process.env.DATABASE_URL,
+      connectionString,
       ssl: { rejectUnauthorized: false },
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     }
   : {
-      host: process.env.DB_HOST || config.db.host,
-      port: parseInt(process.env.DB_PORT || String(config.db.port), 10),
-      user: process.env.DB_USER || config.db.user,
-      password: process.env.DB_PASSWORD || config.db.password,
-      database: process.env.DB_NAME || config.db.database,
-      // Use SSL in production (required by Railway PostgreSQL)
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      host: config.db.host,
+      port: config.db.port,
+      user: config.db.user,
+      password: config.db.password,
+      database: config.db.database,
+      ssl: false as false,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     };
 
-console.log('[DB] Connecting to:', process.env.DB_HOST || config.db.host, 'SSL:', process.env.NODE_ENV === 'production');
+console.log('[DB] Using connection string:', !!connectionString);
 
 export const pool = new Pool(poolConfig);
 
