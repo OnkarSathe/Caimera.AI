@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // In production, frontend is served from the same Express server,
+  // so no proxy is needed. Proxy is only for local dev.
   server: {
     port: 3000,
     proxy: {
@@ -16,5 +18,8 @@ export default defineConfig({
         ws: true,
       },
     },
+  },
+  build: {
+    outDir: 'dist',
   },
 })

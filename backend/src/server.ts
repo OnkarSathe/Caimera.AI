@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import http from 'http';
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -12,20 +13,31 @@ import gameRouter from './routes/game';
 import leaderboardRouter from './routes/leaderboard';
 import { errorHandler } from './middleware/errorHandler';
 
+const isProd = config.nodeEnv === 'production';
+
 async function bootstrap() {
   const app = express();
 
   // Security & parsing
-  app.use(helmet());
-  app.use(cors({ origin: config.corsOrigin, credentials: true }));
+  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(cors({ origin: isProd ? '*' : config.corsOrigin, credentials: true }));
   app.use(express.json());
 
-  // Routes
+  // API Routes
   app.use('/api/auth', authRouter);
   app.use('/api/game', gameRouter);
   app.use('/api/leaderboard', leaderboardRouter);
-
   app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
+
+  // In production, serve the built React app from frontend/dist
+  if (isProd) {
+    const frontendDist = path.join(__dirname, '../../frontend/dist');
+    app.use(express.static(frontendDist));
+    // All non-API routes return index.html (client-side routing)
+    app.get('*', (_, res) => {
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+  }
 
   app.use(errorHandler);
 
