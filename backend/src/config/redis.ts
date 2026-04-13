@@ -1,9 +1,8 @@
 import Redis from 'ioredis';
 import { config } from './index';
 
-// Heroku Redis provides REDIS_URL as a full connection string
-// Fall back to individual host/port for local dev
 function createClient() {
+  // Full URL takes priority (Heroku, or manually set)
   if (process.env.REDIS_URL) {
     return new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
@@ -13,25 +12,22 @@ function createClient() {
         : undefined,
     });
   }
+
+  // Individual params — works on Railway Runtime V2
   return new Redis({
-    host: config.redis.host,
-    port: config.redis.port,
+    host: process.env.REDIS_HOST || config.redis.host,
+    port: parseInt(process.env.REDIS_PORT || String(config.redis.port), 10),
+    password: process.env.REDIS_PASSWORD || undefined,
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
   });
 }
 
-// Main client for commands
 export const redisClient = createClient();
-
-// Separate client for Pub/Sub subscriptions (a subscribed client can't run regular commands)
 export const redisSub = createClient();
-
-// Separate client for the Redis adapter (Socket.io cross-server broadcasting)
 export const redisPub = createClient();
 
 redisClient.on('error', (err) => console.error('[Redis] client error:', err));
 redisSub.on('error', (err) => console.error('[Redis] sub error:', err));
 redisPub.on('error', (err) => console.error('[Redis] pub error:', err));
-
 redisClient.on('connect', () => console.log('[Redis] connected'));
