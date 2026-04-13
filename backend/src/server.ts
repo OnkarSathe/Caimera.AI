@@ -23,6 +23,9 @@ const isProd = config.nodeEnv === 'production';
 console.log('[Config] NODE_ENV:', process.env.NODE_ENV);
 console.log('[Config] DATABASE_URL set:', !!process.env.DATABASE_URL);
 console.log('[Config] REDIS_URL set:', !!process.env.REDIS_URL);
+console.log('[Config] All DB-related env keys:', Object.keys(process.env).filter(k =>
+  ['DATABASE', 'REDIS', 'PG', 'POSTGRES', 'RAILWAY'].some(prefix => k.includes(prefix))
+));
 
 async function bootstrap() {
   const app = express();
