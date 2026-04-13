@@ -1,4 +1,8 @@
-import 'dotenv/config';
+// Only load .env file in development — in production (Railway/Heroku)
+// environment variables are injected directly and must not be overwritten
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 import http from 'http';
 import path from 'path';
 import express from 'express';
@@ -14,6 +18,11 @@ import leaderboardRouter from './routes/leaderboard';
 import { errorHandler } from './middleware/errorHandler';
 
 const isProd = config.nodeEnv === 'production';
+
+// Startup diagnostics
+console.log('[Config] NODE_ENV:', process.env.NODE_ENV);
+console.log('[Config] DATABASE_URL set:', !!process.env.DATABASE_URL);
+console.log('[Config] REDIS_URL set:', !!process.env.REDIS_URL);
 
 async function bootstrap() {
   const app = express();
